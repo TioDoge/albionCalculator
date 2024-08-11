@@ -1,0 +1,10 @@
+_pycache_/
+ENV/
+.venv/
+env/
+include/
+Lib/
+Scripts/
+
+instance/
+migrations/
