@@ -18,4 +18,4 @@ class ItemDatosSchema(marshmallow.SQLAlchemySchema):
     buy_price_min_date = marshmallow.auto_field()
     buy_price_max = marshmallow.auto_field()
     buy_price_max_date = marshmallow.auto_field()
-    fecha_creacion = marshmallow.auto_field()
+    fecha_registro = marshmallow.auto_field()
