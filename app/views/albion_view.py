@@ -41,8 +41,8 @@ class obtenerValoresCraft(Resource):
                     api_comercio_items += item.id_item+","
         
         if(api_comercio_items!=""):
-            api_comercio_items = api_comercio_items[:-1]
-            response = requests.get('https://west.albion-online-data.com/api/v2/stats/prices/'+api_comercio_items+'?locations=Bridgewatch,Caerleon,Fort Sterling,Lymhurst,Martlock,Thetford&qualities=1')
+            api_comercio_items=api_comercio_items[:-1]
+            response = requests.get('https://west.albion-online-data.com/api/v2/stats/prices/'+api_comercio_items+'?locations=Bridgewatch,Brecilien,Caerleon,Fort Sterling,Lymhurst,Martlock,Thetford&qualities=1')
             if response.status_code == 200:
                 data = response.json()
                 for json_data in data:
@@ -100,4 +100,3 @@ class obtenerValoresCraft(Resource):
             resp.append(resp_data)
 
         return generate_response(message="precios", data=resp, status=HTTP_200_OK)
-
