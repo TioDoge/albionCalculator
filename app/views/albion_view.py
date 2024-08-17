@@ -18,9 +18,10 @@ class obtenerValoresCraft(Resource):
         resp = []
         cuerpo = request.get_json()
         api_comercio_items = ""
-
-        city = City.simple_filter(name_city=cuerpo["city"]).first()
-
+        city = None
+        if cuerpo.get("city") is not None:
+            city = City.simple_filter(name_city=cuerpo["city"]).first()
+        
         for item_json in cuerpo["items"]:
             item = Item.simple_filter(id_item=item_json["item_id"]).first()
             if item is None:
@@ -28,7 +29,12 @@ class obtenerValoresCraft(Resource):
                 item.save()
                 api_comercio_items += item_json["item_id"]+","
             else:
-                item_data = ItemDatos.simple_filter(item_id=item.id,city_id=city.id).first()
+                item_data = None
+                if city is None:
+                    item_data = ItemDatos.simple_filter(item_id=item.id).first()
+                else:
+                    item_data = ItemDatos.simple_filter(item_id=item.id,city_id=city.id).first()
+
                 if item_data is not None:
                     result_item_data = ItemDatosSchema().dump(item_data, many=False)
                     fecha = datetime.strptime(result_item_data["fecha_registro"], "%Y-%m-%dT%H:%M:%S")
@@ -42,6 +48,7 @@ class obtenerValoresCraft(Resource):
         
         if(api_comercio_items!=""):
             api_comercio_items=api_comercio_items[:-1]
+            print(api_comercio_items)
             response = requests.get('https://west.albion-online-data.com/api/v2/stats/prices/'+api_comercio_items+'?locations=Bridgewatch,Brecilien,Caerleon,Fort Sterling,Lymhurst,Martlock,Thetford&qualities=1')
             if response.status_code == 200:
                 data = response.json()
@@ -60,6 +67,7 @@ class obtenerValoresCraft(Resource):
                     buy_price_max_data = json_data["buy_price_max"]
                     buy_price_max_date_data = datetime.strptime(json_data["buy_price_max_date"], "%Y-%m-%dT%H:%M:%S")
                     
+
                     item_datos = ItemDatos.simple_filter(item_id=item_da.id,city_id=city_da.id).first()
                     if item_datos is None:
                         item_data_save = ItemDatos(item_id_data, city_id_data, quality_data, sell_price_min_data, sell_price_min_date_data, sell_price_max_data, sell_price_max_date_data, buy_price_min_data, buy_price_min_date_data, buy_price_max_data, buy_price_max_date_data, datetime.now(timezone.utc))
@@ -88,15 +96,32 @@ class obtenerValoresCraft(Resource):
 
         for item in cuerpo["items"]:
             item = Item.simple_filter(id_item=item["item_id"]).first()
-            item_data = ItemDatos.simple_filter(item_id=item.id,city_id=city.id).first()
-            result_item_data = ItemDatosSchema().dump(item_data, many=False)
+            item_data = None
+            if city is None:
+                item_data = ItemDatos.simple_filter(item_id=item.id)
+                result_item_data = ItemDatosSchema().dump(item_data, many=True)
+                for it in result_item_data:
+                    city_dato = City.simple_filter(id=it["city_id"]).first()
+                    resp_data = {
+                        "item": item.id_item,
+                        "precio": it["sell_price_min"],
+                        "utc": datetime.strptime(it["sell_price_min_date"], "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S"),
+                        "ciudad": city_dato.name_city
+                    }
 
-            resp_data = {
-                "item": item.id_item,
-                "precio": item_data.sell_price_min,
-                "utc": datetime.strptime(result_item_data["sell_price_min_date"], "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-            }
+                    resp.append(resp_data)
+            else:
+                item_data = ItemDatos.simple_filter(item_id=item.id,city_id=city.id).first()
+                result_item_data = ItemDatosSchema().dump(item_data, many=False)
 
-            resp.append(resp_data)
+                resp_data = {
+                    "item": item.id_item,
+                    "precio": item_data.sell_price_min,
+                    "utc": datetime.strptime(result_item_data["sell_price_min_date"], "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+                }
+
+                resp.append(resp_data)
+            
+            
 
         return generate_response(message="precios", data=resp, status=HTTP_200_OK)
